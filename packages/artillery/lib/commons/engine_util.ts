@@ -261,6 +261,8 @@ function isProbableEnough(obj: Record<string, any>): boolean {
   return r < probability;
 }
 
+const ESCAPED_OPENING_BRACES = '\\{{';
+
 // Returns the same kind of value it was given - dynamic by design.
 function template(o: any, context: TemplateContext, inPlace?: boolean): any {
   let result;
@@ -279,6 +281,9 @@ function template(o: any, context: TemplateContext, inPlace?: boolean): any {
   } else if (typeof o === 'string') {
     if (!/{{/.test(o)) {
       return o;
+    }
+    if (o.includes(ESCAPED_OPENING_BRACES)) {
+      return templateEscapedString(o, context);
     }
     const funcCallRegex =
       /{{\s*(\$[A-Za-z0-9_]+\s*\(\s*[A-Za-z0-9_,\s]*\s*\))\s*}}/;
@@ -319,6 +324,20 @@ function template(o: any, context: TemplateContext, inPlace?: boolean): any {
   }
 
   return result;
+}
+
+function stringifyTemplated(value: any): string {
+  return typeof value === 'object' ? JSON.stringify(value) : `${value}`;
+}
+
+function templateEscapedString(str: string, context: TemplateContext): string {
+  return str
+    .split(ESCAPED_OPENING_BRACES)
+    .map((segment, index) => {
+      const rendered = stringifyTemplated(template(segment, context));
+      return index === 0 ? rendered : `{{${rendered}`;
+    })
+    .join('');
 }
 
 // Mutates the object in place
