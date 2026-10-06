@@ -149,9 +149,24 @@ test('template functions', (t, done) => {
   done();
 });
 
+test('strings - double curly braces can be escaped with a backslash', (t, done) => {
+  const context = { vars: { bar: 'BAR', name: 'Hassy' } };
+
+  assert.strictEqual(template('foo\\{{ bar }}baz', context), 'foo{{ bar }}baz', 'an escaped template is passed through verbatim');
+
+  assert.strictEqual(template('foo\\{{ bar }}baz', emptyContext), 'foo{{ bar }}baz', 'an escaped template is passed through even when the variable is undefined');
+
+  assert.strictEqual(template('\\{{ bar }}', context), '{{ bar }}', 'a string consisting only of an escaped template is passed through verbatim');
+
+  assert.strictEqual(template('{{ name }} \\{{ bar }} {{ bar }}', context), 'Hassy {{ bar }} BAR', 'escaped and unescaped templates can be mixed');
+
+  assert.deepEqual(template({ qs: { someparam: 'foo\\{{ bar }}baz' } }, context), { qs: { someparam: 'foo{{ bar }}baz' } }, 'escaping works for nested object values');
+
+  done();
+});
+
 test('keys with periods retain their structure', (t, done) => {
   assert.ok(template({ 'hello.world': true }, {})['hello.world'] === true, 'keys with periods are preserved');
-
   const nestedTemplate = template(
     { hello: { world: { 'hello.world': true } } },
     {}
